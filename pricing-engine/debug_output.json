@@ -1,0 +1,16 @@
+{
+  "extraction": {
+    "product_name": "Amul Garlic & Herbs Salted Butter (100 g)",
+    "price": 69,
+    "image_url": "https://rukminim2.flixcart.com/image/1500/1500/jajyj680/butter/k/r/h/100-garlic-herbs-amul-original-imafy4fbmyhyhfge.jpeg",
+    "store": "Flipkart",
+    "url": "https://www.flipkart.com/amul-garlic-herbs-salted-butter/p/itmf08a7807a6a32?pid=BUTEZ3B9CFK6YKRH&lid=LSTBUTEZ3B9CFK6YKRHX9JSIZ&marketplace=FLIPKART&q=amul+butter&store=eat/vyv&srno=s_1_2&otracker=search&otracker1=search&fm=Search&iid=738c6af0-593e-4bda-b5a9-66c929e454a5.BUTEZ3B9CFK6YKRH.SEARCH&ppt=sp&ppn=sp&ssid=2ipm4hiamo0000001778351365081&qH=1a7b1a4980385f7a&ov_redirect=true&ov_redirect=true&_refId=&_appId=CL",
+    "clean_title": "Amul Garlic & Herbs Salted Butter (100 g)"
+  },
+  "normalized": {
+    "brand": "Amul",
+    "product": "Garlic Herbs Salted Butter",
+    "weight": "100g",
+    "full_normalized": "Amul Garlic Herbs Salted Butter 100g"
+  }
+}

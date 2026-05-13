@@ -1,0 +1,52 @@
+{
+  "original_product": {
+    "store": "Flipkart",
+    "title": "Amul Malai Paneer",
+    "price": 95,
+    "image_url": "",
+    "url": "https://dl.flipkart.com/dl/amul-malai-paneer/p/itmd2dac5a7f0d05?pid=PTFFSFHZPJ9AHZGT&lid=LSTPTFFSFHZPJ9AHZGTQR7X2U&marketplace=HYPERLOCAL&shopId=luc_118_wh_hl_01&_refId=&_appId=CL"
+  },
+  "identity_extracted": {
+    "raw": "amul malai paneer",
+    "brand": "Amul",
+    "weight": "Standard",
+    "emoji": "\ud83d\udce6",
+    "section": "General",
+    "is_golden": false
+  },
+  "category_info": {
+    "category": "Branded",
+    "target_unit": "",
+    "is_golden": false
+  },
+  "other_store_prices": [
+    {
+      "store": "Blinkit",
+      "title": "Paneer (Verified Match)",
+      "price": 95,
+      "url": "https://blinkit.com/prn/amul-fresh-malai-paneer/prid/329500",
+      "status": "Verified"
+    },
+    {
+      "store": "Zepto",
+      "title": "Paneer (Verified Match)",
+      "price": 98,
+      "url": "https://www.zepto.com/search?query=mother%20dairy%20paneer%20200g",
+      "status": "Verified"
+    },
+    {
+      "store": "BigBasket",
+      "title": "Paneer (Verified Match)",
+      "price": 92,
+      "url": "https://www.bigbasket.com/pd/279588/amul-malai-paneer-200-g-pouch/",
+      "status": "Verified"
+    }
+  ],
+  "lowest_price_suggestion": {
+    "store": "BigBasket",
+    "title": "Paneer (Verified Match)",
+    "price": 92,
+    "url": "https://www.bigbasket.com/pd/279588/amul-malai-paneer-200-g-pouch/",
+    "status": "Verified"
+  }
+}
