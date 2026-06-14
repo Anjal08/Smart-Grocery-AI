@@ -70,7 +70,7 @@ export async function trainAndPredictLSTM(
 
   // 3. Convert to TF Tensors
   // X shape: [num_samples, time_steps, features] -> [num_samples, windowSize, 1]
-  const xs = tf.tensor3d(X, [X.length, windowSize, 1]);
+  const xs = tf.tensor3d(X.map(row => row.map((v: number) => [v])) as number[][][], [X.length, windowSize, 1]);
   const ys = tf.tensor2d(y, [y.length, 1]);
 
   // 4. Build Model
@@ -111,7 +111,7 @@ export async function trainAndPredictLSTM(
   // 6. Predict the next interval
   // Input the most recent `windowSize` intervals
   const recentWindow = normalized.slice(-windowSize);
-  const inputTensor = tf.tensor3d([recentWindow], [1, windowSize, 1]);
+  const inputTensor = tf.tensor3d([recentWindow.map((v: number) => [v])] as number[][][], [1, windowSize, 1]);
 
   const predictionTensor = model.predict(inputTensor) as tf.Tensor;
   const predictionScaled = (await predictionTensor.data())[0];

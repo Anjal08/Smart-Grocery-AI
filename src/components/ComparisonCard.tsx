@@ -26,7 +26,8 @@ export const ComparisonCard: React.FC<ComparisonCardProps> = ({
   deepLink,
   icon,
   color,
-  lastScraped
+  lastScraped,
+  emoji
 }) => {
   return (
     <motion.div

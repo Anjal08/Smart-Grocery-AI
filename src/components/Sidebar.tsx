@@ -194,7 +194,7 @@ export default function Sidebar() {
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-black text-[#1E293B] leading-none truncate">
-              {session ? session.user.name : "Welcome Guest"}
+              {session?.user?.name ? session.user.name : "Welcome Guest"}
             </p>
             {session ? (
               <button 

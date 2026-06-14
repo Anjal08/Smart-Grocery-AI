@@ -341,7 +341,7 @@ export default function Dashboard() {
            </div>
            
            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {Object.entries(itemsByCategory).map(([cat, catsItems]) => (
+              {Object.entries(itemsByCategory).map(([cat, catsItems]: [string, any]) => (
                 <div key={cat} className="bg-white rounded-[24px] p-5 border border-slate-100 shadow-sm space-y-4 overflow-hidden relative">
                    {/* Background label */}
                    <div className="absolute top-0 right-0 p-4 opacity-[0.03] select-none pointer-events-none transform translate-x-4">
