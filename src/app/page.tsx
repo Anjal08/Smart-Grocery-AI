@@ -267,7 +267,7 @@ export default function Dashboard() {
              <h3 className="text-sm font-black text-rose-900 mb-1">Items to Use Now</h3>
              <p className="text-[11px] font-medium text-rose-600/80 mb-4 tracking-tight">AI predicts these will finish peak freshness in 48h.</p>
              <div className="space-y-2">
-                {expiringItems.slice(0, 2).map(item => (
+                {expiringItems.slice(0, 2).map((item: any) => (
                   <div key={item._id} className="flex items-center gap-2 bg-white/50 p-2 rounded-xl text-xs font-bold text-rose-900 border border-rose-100/50">
                     <div className="w-1.5 h-1.5 rounded-full bg-rose-500" />
                     {item.name}
@@ -350,7 +350,7 @@ export default function Dashboard() {
 
                    <h3 className="text-[10px] font-black text-slate-400 tracking-widest">{cat}</h3>
                    <div className="space-y-4">
-                     {catsItems.map(item => (
+                     {catsItems.map((item: any) => (
                        <div key={item._id} className="flex justify-between items-center group cursor-pointer">
                          <div className="flex items-center gap-3">
                            <ProductThumbnail category={item.category} imageUrl={item.imageUrl} name={item.name} />
