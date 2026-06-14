@@ -102,23 +102,23 @@ export default function Dashboard() {
   // --- Computed Metrics ---
   const totalItemsCount = items.length;
   const recentSavings = 84; // Mocked for UI requirement
-  const alertsCount = items.filter(i => {
+  const alertsCount = items.filter((i: any) => {
     const msPassed = new Date().getTime() - new Date(i.purchaseDate).getTime();
     const daysPassed = Math.max(0, Math.floor(msPassed / (1000 * 60 * 60 * 24)));
-    const shelfLife = i.category.includes("Dairy") ? 5 : 7;
+    const shelfLife = i.category?.includes("Dairy") ? 5 : 7;
     return (shelfLife - daysPassed) <= 2;
   }).length;
   
-  const thisMonthSpend = items.reduce((acc, item) => acc + (item.price || 0) * (item.quantity || 1), 0);
+  const thisMonthSpend = items.reduce((acc: number, item: any) => acc + (item.price || 0) * (item.quantity || 1), 0);
 
   // Freshness Engine
   const expiringItems = useMemo(() => {
     return items
-      .filter(i => i.category === "Fresh Produce" || i.category === "Vegetables & Fruits" || i.category === "Dairy & Bakery")
-      .map(item => {
+      .filter((i: any) => i.category === "Fresh Produce" || i.category === "Vegetables & Fruits" || i.category === "Dairy & Bakery")
+      .map((item: any) => {
         const msPassed = new Date().getTime() - new Date(item.purchaseDate).getTime();
         const daysPassed = Math.max(0, Math.floor(msPassed / (1000 * 60 * 60 * 24)));
-        const shelfLife = item.category.includes("Dairy") ? 5 : 7;
+        const shelfLife = item.category?.includes("Dairy") ? 5 : 7;
         const daysLeft = shelfLife - daysPassed;
 
         let semanticLabel = "FRESH";
@@ -137,15 +137,15 @@ export default function Dashboard() {
 
         return { ...item, semanticLabel, statusColor, daysLeft };
       })
-      .sort((a, b) => a.daysLeft - b.daysLeft)
+      .sort((a: any, b: any) => a.daysLeft - b.daysLeft)
       .slice(0, 6);
   }, [items]);
 
   const itemsByCategory = useMemo(() => {
-    return expiringItems.reduce((acc, item) => {
+    return expiringItems.reduce((acc: any, item: any) => {
       let cat = item.category;
       if (["Vegetables & Fruits", "Fresh Produce"].includes(cat)) cat = "VEGETABLES & FRUITS";
-      if (cat.includes("Dairy")) cat = "DAIRY & BAKERY";
+      if (cat?.includes("Dairy")) cat = "DAIRY & BAKERY";
       
       if (!acc[cat]) acc[cat] = [];
       acc[cat].push(item);
