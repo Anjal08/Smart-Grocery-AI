@@ -18,7 +18,7 @@ The platform audits live prices across Quick-Commerce giants (Blinkit, Zepto, Fl
 
 ---
 
-## ✨ Standout Features (For Recruiters & Engineers)
+## ✨ Standout Features 
 
 ### 1. Multi-Platform Q-Commerce Auditor & AI Vault
 Replaced a brittle Python web-scraping layer with a lightning-fast Node.js serverless architecture powered by **Llama 3 (8B-Instant)**. 
