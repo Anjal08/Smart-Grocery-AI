@@ -1,275 +1,162 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
-import "./ShoppingList.css";
-import {
-  ShoppingCart,
-  Clock,
-  AlertTriangle,
-  RefreshCw,
-  Loader2,
-  Sparkles,
-  TrendingUp,
-  Package,
-  Plus,
-  Check,
-  CheckCircle2,
-  Zap,
-  Wallet,
-  MapPin,
-  TrendingDown
-} from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import React, { useState, useMemo } from 'react';
+import { Check, ShoppingBasket, IndianRupee, ListChecks } from 'lucide-react';
 
-// --- Types ---
-interface PredictedItem {
-  _id?: string;
+interface GroceryItem {
+  id: string;
   name: string;
   category: string;
-  avgIntervalDays: number;
-  lastPurchaseDate: string;
-  predictedRefillDate: string;
-  confidence: number;
-  purchaseCount: number;
-  price?: number;
-  emoji: string;
-  savings: number;
+  quantity: string;
+  price: number;
+  checked: boolean;
 }
 
-interface ShoppingList {
-  urgent: PredictedItem[];
-  soon: PredictedItem[];
-  upcoming: PredictedItem[];
-}
+// Absolute mock data fallback
+const MOCK_DATA: GroceryItem[] = [
+  { id: '1', name: 'Organic Whole Milk', category: 'Dairy & Eggs', quantity: '1L', price: 85, checked: false },
+  { id: '2', name: 'Farm Fresh Brown Eggs', category: 'Dairy & Eggs', quantity: '12 Pack', price: 110, checked: false },
+  { id: '3', name: 'Amul Butter', category: 'Dairy & Eggs', quantity: '500g', price: 260, checked: true },
+  
+  { id: '4', name: 'Fortune Chakki Fresh Atta', category: 'Grains & Staples', quantity: '5kg', price: 210, checked: true },
+  { id: '5', name: 'Premium Basmati Rice', category: 'Grains & Staples', quantity: '1kg', price: 140, checked: false },
+  
+  { id: '6', name: 'Hass Avocados', category: 'Fresh Produce', quantity: '2 pcs', price: 150, checked: false },
+  { id: '7', name: 'Roma Tomatoes', category: 'Fresh Produce', quantity: '1kg', price: 45, checked: false },
+  { id: '8', name: 'Fresh Coriander', category: 'Fresh Produce', quantity: '1 bunch', price: 20, checked: false },
+  
+  { id: '9', name: 'Tide Pods', category: 'Household', quantity: '32 count', price: 350, checked: false },
+  { id: '10', name: 'Kitchen Towels', category: 'Household', quantity: '2 rolls', price: 120, checked: true },
+];
 
-export default function ShoppingListPage() {
-  const [data, setData] = useState<ShoppingList | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isRefreshing, setIsRefreshing] = useState(false);
-  const [checkedItems, setCheckedItems] = useState<Set<string>>(new Set());
+export default function SmartCategoryGroceryBoard() {
+  const [items, setItems] = useState<GroceryItem[]>(MOCK_DATA);
 
-  const fetchList = async () => {
-    try {
-      setIsLoading(true);
-      const res = await fetch("/api/analytics/shopping-list");
-      if (res.ok) {
-        setData(await res.json());
-      }
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setIsLoading(false);
-    }
+  const toggleItem = (id: string) => {
+    setItems(items.map(item => 
+      item.id === id ? { ...item, checked: !item.checked } : item
+    ));
   };
 
-  useEffect(() => {
-    fetchList();
-  }, []);
+  // Calculate dynamic header statistics
+  const totalExpenditure = useMemo(() => {
+    return items.reduce((sum, item) => sum + item.price, 0);
+  }, [items]);
 
-  const handleRefresh = async () => {
-    setIsRefreshing(true);
-    try {
-      await fetch("/api/analytics/refresh", { method: "POST" });
-      await fetchList();
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setIsRefreshing(false);
-    }
-  };
+  const activeCount = useMemo(() => {
+    return items.filter(item => !item.checked).length;
+  }, [items]);
 
-  const toggleItem = (name: string) => {
-    const newChecked = new Set(checkedItems);
-    if (newChecked.has(name)) newChecked.delete(name);
-    else newChecked.add(name);
-    setCheckedItems(newChecked);
-  };
-
-  // --- Regroup by Category ---
-  const categorizedData = useMemo(() => {
-    if (!data) return {};
-    const allItems = [...data.urgent, ...data.soon, ...data.upcoming];
-    const grouped: Record<string, PredictedItem[]> = {};
-    
-    allItems.forEach(item => {
-      if (!grouped[item.category]) grouped[item.category] = [];
-      grouped[item.category].push(item);
-    });
-    
-    return grouped;
-  }, [data]);
-
-  const metrics = useMemo(() => {
-    if (!data) return { urgent: 0, total: 0, savings: 0 };
-    const allItems = [...data.urgent, ...data.soon, ...data.upcoming];
-    const totalEst = allItems.reduce((acc, i) => acc + (i.price || 120), 0);
-    const totalSavings = allItems.reduce((acc, i) => acc + (i.savings || 0), 0);
-    return {
-      urgent: data.urgent.length,
-      total: totalEst,
-      savings: totalSavings
-    };
-  }, [data]);
-
-  const getDaysLate = (dateStr: string) => {
-    const target = new Date(dateStr);
-    const now = new Date();
-    const diff = Math.floor((now.getTime() - target.getTime()) / (1000 * 60 * 60 * 24));
-    return diff > 0 ? diff : 0;
-  };
-
-  const getCategoryEmoji = (cat: string) => {
-    const maps: Record<string, string> = {
-      "Dairy": "🥛",
-      "Staples": "🛒",
-      "Pantry": "🛒",
-      "Cleaning": "🧼",
-      "Personal Care": "🧴",
-      "Produce": "🍎",
-      "Bakery": "🍞",
-      "Snacks": "🍪"
-    };
-    return maps[cat] || "📦";
-  };
-
-  if (isLoading) {
-    return (
-      <div className="flex h-screen items-center justify-center bg-[#fdfbf6]">
-        <Loader2 className="w-10 h-10 animate-spin text-indigo-600" />
-      </div>
-    );
-  }
+  // Group items into a categorization matrix
+  const groupedItems = useMemo(() => {
+    return items.reduce((acc, item) => {
+      if (!acc[item.category]) acc[item.category] = [];
+      acc[item.category].push(item);
+      return acc;
+    }, {} as Record<string, GroceryItem[]>);
+  }, [items]);
 
   return (
-    <div className="min-h-screen bg-[#fdfbf6] p-6 md:p-12 text-[#0f172a] selection:bg-indigo-100">
-      <div className="max-w-4xl mx-auto space-y-12">
+    <div className="min-h-screen bg-slate-50 pt-24 pb-20 px-6 font-sans">
+      <div className="max-w-4xl mx-auto space-y-8">
         
-        {/* 1. SMART HEADER */}
-        <header className="space-y-8">
-           <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
-              <div className="space-y-4">
-                 <div className="flex items-center gap-3">
-                   <div className="inline-flex items-center gap-2 px-3 py-1 bg-indigo-50 text-indigo-600 rounded-full text-[10px] font-black uppercase tracking-[0.2em] border border-indigo-100">
-                     <MapPin className="w-3 h-3" />
-                     Lucknow 226028
-                   </div>
-                   <div className="inline-flex items-center gap-2 px-3 py-1 bg-emerald-50 text-emerald-600 rounded-full text-[10px] font-black uppercase tracking-[0.2em] border border-emerald-100">
-                     <Sparkles className="w-3 h-3" />
-                     Smart Refill Active
-                   </div>
-                 </div>
-                 <h1 className="text-5xl md:text-6xl font-black tracking-tighter text-[#0f172a]">
-                   Smart <span className="text-indigo-600">Cart.</span>
-                 </h1>
+        {/* 1. HEADER OVERVIEW TICKER */}
+        <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-[32px] p-8 shadow-2xl shadow-slate-900/20 text-white flex flex-col md:flex-row items-center justify-between gap-6 overflow-hidden relative">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3 pointer-events-none"></div>
+          
+          <div className="relative z-10 w-full md:w-auto text-center md:text-left">
+            <h1 className="text-3xl md:text-4xl font-black tracking-tight flex flex-col md:flex-row items-center gap-3">
+              <div className="p-3 bg-white/10 rounded-2xl backdrop-blur-sm">
+                <ShoppingBasket className="w-8 h-8 text-indigo-400" />
               </div>
+              Smart Grocery Board
+            </h1>
+            <p className="text-slate-400 font-medium mt-3 md:mt-2 text-sm md:text-base">
+              Automated category-optimized procurement matrix.
+            </p>
+          </div>
 
-              <div className="text-right">
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-1">Total Potential Savings</p>
-                <h2 className="text-4xl font-black gradient-text-savings">₹{metrics.savings}</h2>
+          <div className="flex items-center justify-center md:justify-end gap-4 relative z-10 w-full md:w-auto">
+            {/* Active Items Counter */}
+            <div className="bg-white/10 backdrop-blur-md border border-white/10 rounded-2xl p-5 w-full md:w-36 text-center shadow-inner">
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] flex items-center justify-center gap-1.5 mb-2">
+                <ListChecks className="w-3.5 h-3.5" /> Active
+              </p>
+              <p className="text-4xl font-black text-white">{activeCount}</p>
+            </div>
+            
+            {/* Total Expenditure Counter */}
+            <div className="bg-white/10 backdrop-blur-md border border-white/10 rounded-2xl p-5 w-full md:w-40 text-center shadow-inner">
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] flex items-center justify-center gap-1.5 mb-2">
+                <IndianRupee className="w-3.5 h-3.5" /> Total
+              </p>
+              <p className="text-4xl font-black text-emerald-400">₹{totalExpenditure}</p>
+            </div>
+          </div>
+        </div>
+
+        {/* 2. GROUPED CATEGORIZATION MATRIX */}
+        <div className="space-y-8 pt-4">
+          {Object.entries(groupedItems).map(([category, categoryItems]) => (
+            <div key={category} className="bg-white rounded-[32px] border border-slate-100 shadow-sm overflow-hidden">
+              
+              {/* Category Header */}
+              <div className="bg-slate-50/80 border-b border-slate-100 px-8 py-5 flex items-center justify-between">
+                <h2 className="text-xl font-black text-slate-800 tracking-tight">
+                  {category}
+                </h2>
+                <span className="text-xs font-black bg-indigo-50 text-indigo-600 px-3 py-1 rounded-full border border-indigo-100">
+                  {categoryItems.filter(i => !i.checked).length} items remaining
+                </span>
               </div>
-           </div>
+              
+              {/* Items List */}
+              <div className="divide-y divide-slate-50">
+                {categoryItems.map((item) => (
+                  <div 
+                    key={item.id}
+                    onClick={() => toggleItem(item.id)}
+                    className="group px-8 py-5 flex items-center justify-between hover:bg-slate-50/50 transition-colors cursor-pointer select-none"
+                  >
+                    <div className="flex items-center gap-5">
+                      
+                      {/* 3. REACTION CHECKBOX SELECTION */}
+                      <div className={`w-7 h-7 rounded-lg border-2 flex items-center justify-center transition-all duration-300 ${
+                        item.checked 
+                          ? 'bg-emerald-500 border-emerald-500 shadow-[0_4px_12px_rgba(16,185,129,0.3)] scale-110' 
+                          : 'bg-white border-slate-300 group-hover:border-indigo-400 group-hover:shadow-sm'
+                      }`}>
+                        {item.checked && <Check className="w-4 h-4 text-white" strokeWidth={4} />}
+                      </div>
 
-           <div className="flex flex-wrap gap-4 pt-2">
-              <button 
-                onClick={handleRefresh}
-                className="glass-card rounded-2xl px-8 py-4 flex items-center gap-3 transition-all hover:scale-105 active:scale-95 border border-slate-200"
-              >
-                 <RefreshCw size={18} className={isRefreshing ? "animate-spin text-indigo-600" : "text-indigo-600"} />
-                 <span className="text-xs font-black uppercase tracking-widest">Refresh Predictions</span>
-              </button>
-           </div>
-        </header>
+                      <div className="space-y-0.5">
+                        <p className={`text-lg font-black transition-all duration-300 ${
+                          item.checked ? 'text-gray-300 line-through' : 'text-slate-800'
+                        }`}>
+                          {item.name}
+                        </p>
+                        <p className={`text-sm font-bold transition-all duration-300 ${
+                          item.checked ? 'text-gray-200' : 'text-slate-400'
+                        }`}>
+                          ₹{item.price}
+                        </p>
+                      </div>
+                    </div>
 
-        {/* 2. MAIN CONTAINER */}
-        <main className="space-y-16">
-           {Object.entries(categorizedData).map(([category, items], catIdx) => (
-             <section key={category} className="space-y-8">
-                <div className="flex items-center gap-4">
-                   <span className="text-3xl">{getCategoryEmoji(category)}</span>
-                   <h2 className="text-sm font-black tracking-[0.3em] text-slate-400 uppercase">{category}</h2>
-                   <div className="h-px bg-slate-200 flex-1" />
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                   {items.map((item, i) => {
-                     const isChecked = checkedItems.has(item.name);
-                     const lateDays = getDaysLate(item.predictedRefillDate);
-
-                     return (
-                       <motion.div
-                         layout
-                         key={item.name}
-                         initial={{ opacity: 0, scale: 0.95 }}
-                         animate={{ opacity: 1, scale: 1 }}
-                         transition={{ delay: catIdx * 0.1 + i * 0.05 }}
-                         onClick={() => toggleItem(item.name)}
-                         className={`group glass-card p-6 rounded-[32px] cursor-pointer transition-all duration-500 relative overflow-hidden ${
-                           isChecked ? "checked-card" : ""
-                         }`}
-                       >
-                          {/* Savings Badge */}
-                          {!isChecked && (
-                            <div className="absolute top-6 right-6">
-                              <div className="bg-emerald-50 text-emerald-600 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-wider border border-emerald-100">
-                                Save ₹{item.savings}
-                              </div>
-                            </div>
-                          )}
-
-                          <div className="flex items-center gap-6">
-                             {/* Emoji Circle (40px) */}
-                             <div className="w-16 h-16 rounded-2xl emoji-circle flex items-center justify-center text-4xl group-hover:scale-110 transition-transform duration-500">
-                                {item.emoji}
-                             </div>
-
-                             <div className="flex-1 min-w-0">
-                                <h3 className={`font-black text-lg tracking-tight transition-all truncate ${isChecked ? 'line-through text-slate-300' : 'text-[#0f172a]'}`}>
-                                  {item.name}
-                                </h3>
-                                <div className="flex items-center gap-3 mt-1">
-                                   <span className="text-sm font-black text-indigo-600">₹{item.price || 120}</span>
-                                   <span className="w-1 h-1 bg-slate-200 rounded-full" />
-                                   <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest truncate">
-                                      {item.category}
-                                   </span>
-                                </div>
-                                {!isChecked && (
-                                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-3 flex items-center gap-1.5">
-                                    <Clock size={12} className={lateDays > 0 ? "text-rose-500" : ""} />
-                                    <span className={lateDays > 0 ? "text-rose-500" : ""}>
-                                      {lateDays > 0 ? `Late by ${lateDays} days` : 'Refill soon'}
-                                    </span>
-                                  </p>
-                                )}
-                             </div>
-                          </div>
-                       </motion.div>
-                     );
-                   })}
-                </div>
-             </section>
-           ))}
-
-           {(!data || Object.keys(categorizedData).length === 0) && (
-              <div className="py-24 text-center space-y-6 bg-white/50 rounded-[48px] border border-slate-100 shadow-sm">
-                 <div className="w-24 h-24 bg-emerald-50 rounded-[32px] flex items-center justify-center mx-auto border border-emerald-100">
-                    <CheckCircle2 size={48} className="text-emerald-500" />
-                 </div>
-                 <div>
-                    <h3 className="text-2xl font-black text-[#0f172a]">Fully Stocked.</h3>
-                    <p className="text-sm font-bold text-slate-400 max-w-xs mx-auto uppercase tracking-widest leading-relaxed mt-2">
-                      Your pantry in Lucknow is fully optimized.
-                    </p>
-                 </div>
+                    {/* 4. QUANTITY BADGES */}
+                    <div className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-colors duration-300 ${
+                      item.checked 
+                        ? 'bg-slate-50 text-slate-300' 
+                        : 'bg-indigo-50 text-indigo-700 shadow-sm border border-indigo-100'
+                    }`}>
+                      {item.quantity}
+                    </div>
+                  </div>
+                ))}
               </div>
-           )}
-        </main>
-
-        <footer className="pt-12 text-center opacity-40">
-           <p className="text-[9px] font-black uppercase tracking-[0.4em] text-slate-500">
-             Smart Cart AI • Frosted Light Edition • 2026
-           </p>
-        </footer>
+            </div>
+          ))}
+        </div>
 
       </div>
     </div>

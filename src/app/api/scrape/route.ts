@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { generatePriceForecast } from '@/lib/predictionService';
 
 interface PlatformResult {
   platform: string;
@@ -14,6 +15,7 @@ interface PlatformResult {
   color: string;
   isBestValue: boolean;
   deliveryTime: string;
+  emoji: string;
 }
 
 const PLATFORM_COLORS: Record<string, string> = {
@@ -22,6 +24,7 @@ const PLATFORM_COLORS: Record<string, string> = {
   'BigBasket': '#84C225',
   'Flipkart': '#2874F0',
   'Flipkart Minutes': '#2874F0',
+  'Local Mandi': '#22C55E'
 };
 
 const PLATFORM_FEES: Record<string, number> = {
@@ -29,114 +32,62 @@ const PLATFORM_FEES: Record<string, number> = {
   'Zepto': 4,
   'BigBasket': 0,
   'Flipkart Minutes': 5,
+  'Local Mandi': 0
 };
 
 export async function POST(req: Request) {
   try {
-    const { productName, pincode = '226001' } = await req.json();
+    const { productName } = await req.json();
 
     if (!productName) {
       return NextResponse.json({ success: false, error: 'Product name is required' }, { status: 400 });
     }
 
-    // Check if the input is a URL
-    const isUrl = productName.startsWith('http://') || productName.startsWith('https://');
-    let response;
-    
-    if (isUrl) {
-      // Call our new URL compare endpoint
-      const pythonApiUrl = `http://localhost:8000/compare-url`;
-      response = await fetch(pythonApiUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url: productName })
-      });
-    } else {
-      // Call our standard Smart-Match Engine (/compare endpoint)
-      const pythonApiUrl = `http://localhost:8000/compare?q=${encodeURIComponent(productName)}&pincode=${pincode}`;
-      response = await fetch(pythonApiUrl);
-    }
-    
-    if (!response.ok) {
-      const errData = await response.json().catch(() => ({}));
-      throw new Error(`Pricing Engine returned ${response.status}: ${errData.detail || 'Unknown error'}`);
-    }
+    // Call the LLM-based prediction service instead of the Python scraper
+    const forecast = await generatePriceForecast(productName);
 
-    const data = await response.json();
-    const bestMatches = isUrl ? [data.original_product, ...(data.other_store_prices || [])] : data.results;
-
-    // Map Python results to Frontend structure
-    const results: PlatformResult[] = bestMatches.map((deal: any) => {
-      const platformFee = PLATFORM_FEES[deal.store] || 0;
-      const mrp = deal.mrp || deal.price;
-      const discount = mrp > deal.price ? Math.round(((mrp - deal.price) / mrp) * 100) : 0;
-
+    const mappedResults: PlatformResult[] = forecast.breakdown.map((b: any) => {
+      const platformFee = PLATFORM_FEES[b.platform] || 0;
       return {
-        platform: deal.store,
-        productName: deal.title || deal.product_name,
-        price: deal.price,
-        mrp: mrp,
-        discount: discount,
-        platformFee: platformFee,
-        totalPrice: deal.price + platformFee,
+        platform: b.platform,
+        productName: forecast.itemName,
+        price: b.price,
+        mrp: b.price + (b.price * 0.1), // simulate MRP slightly higher
+        discount: 10,
+        platformFee,
+        totalPrice: b.price + platformFee,
         available: true,
-        productImage: deal.image_url || '', 
-        deepLink: deal.url,
-        color: PLATFORM_COLORS[deal.store] || '#94A3B8',
-        isBestValue: (isUrl && data.lowest_price_suggestion && data.lowest_price_suggestion.store === deal.store) || deal.is_best_value || false,
-        deliveryTime: deal.delivery || '10m',
+        productImage: '', // frontend fallback will be used
+        deepLink: '#',
+        color: PLATFORM_COLORS[b.platform] || '#94A3B8',
+        isBestValue: b.platform === forecast.bestPlatform,
+        deliveryTime: b.eta,
+        emoji: '📦'
       };
     });
 
-    // Add placeholders for stores not found
-    const foundPlatforms = new Set(results.map(r => r.platform));
-    ['Blinkit', 'Zepto', 'BigBasket', 'Flipkart Minutes'].forEach(p => {
-      if (!foundPlatforms.has(p)) {
-        results.push({
-          platform: p,
-          productName,
-          price: 0,
-          mrp: 0,
-          discount: 0,
-          platformFee: 0,
-          totalPrice: 0,
-          available: false,
-          productImage: '',
-          deepLink: '',
-          color: PLATFORM_COLORS[p] || '#94A3B8',
-          isBestValue: false,
-          deliveryTime: '',
-        });
-      }
-    });
-
-    // Sort: available first, then by price
-    results.sort((a, b) => {
-      if (a.available && !b.available) return -1;
-      if (!a.available && b.available) return 1;
-      return a.totalPrice - b.totalPrice;
-    });
-
-    const available = results.filter(r => r.available);
-    const cheapest = available.find(r => r.isBestValue) || available[0] || null;
-    const mostExpensive = available[available.length - 1] || null;
-    const savings = (cheapest && mostExpensive) ? mostExpensive.totalPrice - cheapest.totalPrice : 0;
+    const cheapest = mappedResults.find(r => r.isBestValue) || mappedResults[0];
+    const mostExpensive = [...mappedResults].sort((a, b) => b.totalPrice - a.totalPrice)[0];
+    const savings = mostExpensive.totalPrice - cheapest.totalPrice;
 
     return NextResponse.json({
       success: true,
       query: productName,
-      results,
-      cheapest: cheapest?.platform || null,
-      mostExpensive: mostExpensive?.platform || null,
-      savings,
+      results: mappedResults,
+      cheapest: cheapest.platform,
+      mostExpensive: mostExpensive.platform,
+      savings: Math.round(savings),
       asOf: new Date().toISOString(),
+      aiInsight: forecast.aiInsight,
+      predictedPriceDrop: forecast.predictedPriceDrop,
+      bestTimeToBuy: forecast.bestTimeToBuy
     });
 
   } catch (error: any) {
     console.error('API Route Error:', error);
     return NextResponse.json({
       success: false,
-      error: 'Aggregator logic failed. Check the Python service.',
+      error: 'AI Pricing Engine failed. Please try again.',
     }, { status: 500 });
   }
 }

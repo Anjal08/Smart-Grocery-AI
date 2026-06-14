@@ -119,7 +119,7 @@ export default function Sidebar() {
   const navItems = [
     { href: '/', label: 'Dashboard', icon: <IndianRupee className="w-5 h-5" /> },
     { href: '/inventory', label: 'Inventory', icon: <Wallet className="w-5 h-5" /> },
-    { href: '/price-search', label: 'Price Search', icon: <Search className="w-5 h-5" /> },
+    { href: '/price-search', label: 'AI Predictor', icon: <Search className="w-5 h-5" /> },
     { href: '/analytics', label: 'Analytics', icon: <BarChart3 className="w-5 h-5" /> },
     { href: '/shopping-list', label: 'Shopping List', icon: <ShoppingCart className="w-5 h-5" /> },
     { href: '/health-scanner', label: 'Health Scanner', icon: <ShieldCheck className="w-5 h-5" /> },
